@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Grid } from "@mui/material";
 
 import CustomTable from "../palette/CustomTable";
@@ -18,6 +18,7 @@ import {
   TopMoverType,
 } from "./types";
 import { LIST_TAGS, SUPPORTED_CURRENCIES_FIELDS } from "./constants";
+import { useQuery } from "react-query";
 
 const MainContainer = () => {
   const classes = useStyles();
@@ -36,37 +37,48 @@ const MainContainer = () => {
     getPriceChanges(convertedData);
   };
 
-  const getPriceChanges = useCallback(
-    async (tmpSupportedCurrencies?: ConvertedSupportedCurrenciesType[]) => {
-      const response = await fetch(
-        "https://api.pintu.co.id/v2/trade/price-changes"
-      );
-      const data = (await response.json()).payload;
-      const convertedData = convertSupportedCurrenciesWithPrice(
-        tmpSupportedCurrencies
-          ? tmpSupportedCurrencies
-          : [...supportedCurrencies],
-        data
-      );
-      setSupportedCurrencies(convertedData);
-      const tmpTopMovers = getTopMovers([...convertedData]);
-      setTopMovers(tmpTopMovers);
-    },
-    [supportedCurrencies]
+  const getPriceChanges = async (
+    tmpSupportedCurrencies?: ConvertedSupportedCurrenciesType[]
+  ) => {
+    const response = await fetch(
+      "https://api.pintu.co.id/v2/trade/price-changes"
+    );
+    const data = (await response.json()).payload;
+    const convertedData = convertSupportedCurrenciesWithPrice(
+      tmpSupportedCurrencies
+        ? tmpSupportedCurrencies
+        : [...supportedCurrencies],
+      data
+    );
+    setSupportedCurrencies(convertedData);
+    const tmpTopMovers = getTopMovers([...convertedData]);
+    setTopMovers(tmpTopMovers);
+  };
+
+  const { refetch } = useQuery("supportedCurrencies", getSupportedCurrencies, {
+    enabled: false,
+  });
+
+  const { refetch: refetchPriceChanges } = useQuery(
+    "priceChanges",
+    () => getPriceChanges(),
+    {
+      enabled: false,
+    }
   );
 
   useEffect(() => {
-    getSupportedCurrencies();
+    refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     getPriceChanges();
-  //   }, 1000);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchPriceChanges();
+    }, 1000);
 
-  //   return () => clearInterval(interval);
-  // }, [getPriceChanges]);
+    return () => clearInterval(interval);
+  }, [refetchPriceChanges]);
 
   return (
     <Grid className={classes.container}>
@@ -74,7 +86,7 @@ const MainContainer = () => {
       <Grid container className={classes.contentContainer}>
         <SearchBar />
         <TopMovers data={topMovers} />
-        <Tags tags={LIST_TAGS}/>
+        <Tags tags={LIST_TAGS} />
         <CustomTable
           fields={SUPPORTED_CURRENCIES_FIELDS}
           records={supportedCurrencies}

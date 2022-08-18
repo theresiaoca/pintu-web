@@ -8,16 +8,20 @@ import {
   ThemeProvider,
   StyledEngineProvider,
 } from "@mui/material/styles";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 const theme = createTheme();
+const queryClient = new QueryClient();
 
 ReactDOM.render(
   <React.StrictMode>
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme}>
-        <App />
-      </ThemeProvider>
-    </StyledEngineProvider>
+    <QueryClientProvider client={queryClient}>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <App />
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
   document.getElementById("root") as HTMLElement
 );
